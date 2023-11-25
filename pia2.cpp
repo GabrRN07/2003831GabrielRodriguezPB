@@ -1,0 +1,250 @@
+#include <iostream>
+#include <fstream>
+#include <cmath>
+
+using namespace std;
+
+const int MAX_ORDERS = 100;
+const int MAX_ARTICLES = 50;
+const int MAX_NAME_LENGTH = 20;
+
+struct Order {
+    char sellerName[MAX_NAME_LENGTH];
+    char date[MAX_NAME_LENGTH];
+    char articles[MAX_ARTICLES][MAX_NAME_LENGTH];
+    double prices[MAX_ARTICLES];
+    int totalItems;
+    double unitPrice;
+    double discounts;
+    double tips[3];
+    double tax;
+    double total;
+    int cancelled;
+};
+
+Order orders[MAX_ORDERS];
+int activeOrders = 0;
+
+void clearScreen();
+void calculateOrderTotal(Order& order);
+void createOrder();
+void listOrders();
+void saveToFile();
+void cancelOrder();
+void modifyOrder();
+void clearScreenOption();
+void printUserManual();
+
+void clearScreen() {
+    system("clear");
+}
+
+void calculateOrderTotal(Order& order) {
+    order.unitPrice = 0;
+    for (int i = 0; i < order.totalItems; ++i) {
+        order.unitPrice += order.prices[i];
+    }
+
+    cout << "Ingrese el descuento (en porcentaje): ";
+    cin >> order.discounts;
+
+    for (int i = 0; i < 3; ++i) {
+        cout << "Ingrese la propina del " << (i + 1) * 10 << "%: ";
+        cin >> order.tips[i];
+    }
+
+    cout << "Ingrese el impuesto (en porcentaje): ";
+    cin >> order.tax;
+
+    order.total = order.unitPrice * (1 - order.discounts / 100) + order.tax;
+
+    for (int i = 0; i < 3; ++i) {
+        order.total += order.tips[i];
+    }
+}
+
+void createOrder() {
+    if (activeOrders < MAX_ORDERS) {
+        Order newOrder;
+        cout << "Ingrese el nombre del vendedor: ";
+        cin >> newOrder.sellerName;
+
+        cout << "Ingrese la fecha: ";
+        cin >> newOrder.date;
+
+        cout << "Ingrese el número total de artículos: ";
+        cin >> newOrder.totalItems;
+
+        for (int i = 0; i < newOrder.totalItems; ++i) {
+            cout << "Ingrese el nombre del artículo " << i + 1 << ": ";
+            cin >> newOrder.articles[i];
+
+            cout << "Ingrese el precio del artículo " << i + 1 << ": ";
+            cin >> newOrder.prices[i];
+        }
+
+        calculateOrderTotal(newOrder);
+
+        orders[activeOrders++] = newOrder;
+        cout << "Orden creada con éxito.\n";
+    }
+    else {
+        cout << "Error: Se ha alcanzado el límite máximo de órdenes.\n";
+    }
+}
+
+void listOrders() {
+    cout << "Lista de Órdenes:\n";
+    for (int i = 0; i < activeOrders; ++i) {
+        cout << "Número de Orden: " << i + 1 << '\n';
+        cout << "Vendedor: " << orders[i].sellerName << '\n';
+        cout << "Fecha: " << orders[i].date << '\n';
+        cout << "Artículos:\n";
+
+        for (int j = 0; j < orders[i].totalItems; ++j) {
+            cout << "  - " << orders[i].articles[j] << ": $" << orders[i].prices[j] << '\n';
+        }
+
+        cout << "Total: $" << orders[i].total << '\n';
+        cout << "Estado: " << (orders[i].cancelled ? "Cancelada" : "Activa") << "\n\n";
+    }
+}
+
+void saveToFile() {
+    ofstream file("orders.txt");
+    if (file.is_open()) {
+        for (int i = 0; i < activeOrders; ++i) {
+            file << "Vendedor: " << orders[i].sellerName << '\n';
+            file << "Fecha: " << orders[i].date << '\n';
+            file << "Artículos:\n";
+
+            for (int j = 0; j < orders[i].totalItems; ++j) {
+                file << "  - " << orders[i].articles[j] << ": $" << orders[i].prices[j] << '\n';
+            }
+
+            file << "Total: $" << orders[i].total << '\n';
+            file << "Estado: " << (orders[i].cancelled ? "Cancelada" : "Activa") << "\n\n";
+        }
+        cout << "Datos guardados en el archivo 'orders.txt'.\n";
+    }
+    else {
+        cout << "Error al abrir el archivo para guardar.\n";
+    }
+}
+
+void cancelOrder() {
+    int orderNumber;
+    cout << "Ingrese el número de orden que desea cancelar: ";
+    cin >> orderNumber;
+
+    if (orderNumber >= 1 && orderNumber <= activeOrders) {
+        orders[orderNumber - 1].cancelled = 1;
+        cout << "Orden cancelada con éxito.\n";
+    }
+    else {
+        cout << "Número de orden no válido.\n";
+    }
+}
+
+void modifyOrder() {
+    int orderNumber;
+    cout << "Ingrese el número de orden que desea modificar: ";
+    cin >> orderNumber;
+
+    if (orderNumber >= 1 && orderNumber <= activeOrders) {
+        Order& modifiedOrder = orders[orderNumber - 1];
+        cout << "Modificando la orden " << orderNumber << ":\n";
+
+        cout << "Ingrese el nuevo nombre del vendedor: ";
+        cin >> modifiedOrder.sellerName;
+
+        cout << "Ingrese la nueva fecha: ";
+        cin >> modifiedOrder.date;
+
+        cout << "Ingrese el nuevo número total de artículos: ";
+        cin >> modifiedOrder.totalItems;
+
+        for (int i = 0; i < modifiedOrder.totalItems; ++i) {
+            cout << "Ingrese el nombre del nuevo artículo " << i + 1 << ": ";
+            cin >> modifiedOrder.articles[i];
+
+            cout << "Ingrese el precio del nuevo artículo " << i + 1 << ": ";
+            cin >> modifiedOrder.prices[i];
+        }
+
+        calculateOrderTotal(modifiedOrder);
+
+        cout << "Orden modificada con éxito.\n";
+    }
+    else {
+        cout << "Número de orden no válido.\n";
+    }
+}
+
+void clearScreenOption() {
+    clearScreen();
+    cout << "Pantalla limpia.\n";
+}
+
+void printUserManual() {
+    cout << "Manual de Usuario:\n";
+    cout << "1. Alta de Órdenes: Permite crear una nueva orden con la información necesaria.\n";
+    cout << "2. Lista de Órdenes: Muestra una lista de todas las órdenes, indicando su estado.\n";
+    cout << "3. Guardar en Archivo: Guarda la información de las órdenes en un archivo de texto.\n";
+    cout << "4. Cancelar Órden: Permite cancelar una orden específica.\n";
+    cout << "5. Modificar Órden: Permite modificar una orden existente.\n";
+    cout << "6. Limpiar Pantalla: Limpia la pantalla de la consola.\n";
+    cout << "7. Manual de Usuario: Muestra este manual de usuario.\n";
+    cout << "8. Salir: Cierra el programa.\n";
+}
+
+void main() {
+    int choice;
+
+    do {
+        cout << "Menú de opciones:\n"
+            << "1. Alta de Órdenes\n"
+            << "2. Lista de Órdenes\n"
+            << "3. Guardar en Archivo\n"
+            << "4. Cancelar Órden\n"
+            << "5. Modificar Órden\n"
+            << "6. Limpiar Pantalla\n"
+            << "7. Manual de Usuario\n"
+            << "8. Salir\n"
+            << "Ingrese su elección: ";
+        cin >> choice;
+
+        switch (choice) {
+        case 1:
+            createOrder();
+            break;
+        case 2:
+            listOrders();
+            break;
+        case 3:
+            saveToFile();
+            break;
+        case 4:
+            cancelOrder();
+            break;
+        case 5:
+            modifyOrder();
+            break;
+        case 6:
+            clearScreenOption();
+            break;
+        case 7:
+            printUserManual();
+            break;
+        case 8:
+            cout << "Saliendo del sistema. ¡Hasta luego!\n";
+            break;
+        default:
+            cout << "Opción no válida. Inténtelo de nuevo.\n";
+        }
+
+        // Limpiar el buffer de entrada para evitar problemas con la próxima entrada.
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    } while (choice != 8);
+}
